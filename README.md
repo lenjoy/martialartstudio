@@ -10,9 +10,9 @@ A comprehensive web application for managing a martial arts studio with coach pr
 
 ## 🌐 URLs
 
-- **Development**: https://3000-icai4shjazuqxs0fg7fmb.e2b.dev
-- **API Base**: https://3000-icai4shjazuqxs0fg7fmb.e2b.dev/api
-- **GitHub**: (To be configured during deployment)
+- **Production**: https://5d83c267.martial-arts-studio.pages.dev
+- **API Base**: https://5d83c267.martial-arts-studio.pages.dev/api
+- **GitHub**: https://github.com/lenjoy/martialartstudio
 
 ## 🏛️ Data Architecture
 
@@ -174,9 +174,10 @@ curl -X POST -H "Content-Type: application/json" \
 ## 🚀 Deployment
 
 ### Current Status
-- **Platform**: Cloudflare Pages (configured)
-- **Status**: ✅ Development Active
+- **Platform**: Cloudflare Pages
+- **Status**: ✅ Production Live
 - **Tech Stack**: Hono + TypeScript + Cloudflare D1 + TailwindCSS
+- **Database**: D1 SQLite (c08f2cef-7d28-4a8d-a8b0-f1417d6a05be)
 - **Last Updated**: August 29, 2025
 
 ### Local Development
