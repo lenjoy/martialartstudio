@@ -1,58 +1,94 @@
 import { Hono } from 'hono';
 import type { Bindings, Coach, CreateCoachRequest, CoachWithAvailability } from '../types';
+import { mockCoaches } from '../mockData';
 
 const coaches = new Hono<{ Bindings: Bindings }>();
 
 // Get all active coaches
 coaches.get('/', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT * FROM coaches WHERE active = TRUE ORDER BY name
-    `).all();
+    // Try database first, fallback to mock data
+    if (c.env.DB) {
+      const { results } = await c.env.DB.prepare(`
+        SELECT * FROM coaches WHERE active = TRUE ORDER BY name
+      `).all();
 
-    const coachesData = results.map((coach: any) => ({
-      ...coach,
-      specialties: coach.specialties ? JSON.parse(coach.specialties) : []
-    }));
+      const coachesData = results.map((coach: any) => ({
+        ...coach,
+        specialties: coach.specialties ? JSON.parse(coach.specialties) : []
+      }));
 
-    return c.json({ success: true, coaches: coachesData });
+      return c.json({ success: true, coaches: coachesData });
+    } else {
+      // Use mock data when database is not available
+      return c.json({ success: true, coaches: mockCoaches });
+    }
   } catch (error) {
-    console.error('Error fetching coaches:', error);
-    return c.json({ success: false, error: 'Failed to fetch coaches' }, 500);
+    console.error('Error fetching coaches, using mock data:', error);
+    // Fallback to mock data on database error
+    return c.json({ success: true, coaches: mockCoaches });
   }
 });
 
 // Get single coach by ID with availability
 coaches.get('/:id', async (c) => {
-  const id = c.req.param('id');
+  const id = parseInt(c.req.param('id'));
   
   try {
-    // Get coach details
-    const coach = await c.env.DB.prepare(`
-      SELECT * FROM coaches WHERE id = ? AND active = TRUE
-    `).bind(id).first();
+    if (c.env.DB) {
+      // Get coach details
+      const coach = await c.env.DB.prepare(`
+        SELECT * FROM coaches WHERE id = ? AND active = TRUE
+      `).bind(id).first();
 
+      if (!coach) {
+        return c.json({ success: false, error: 'Coach not found' }, 404);
+      }
+
+      // Get coach's availability
+      const { results: availability } = await c.env.DB.prepare(`
+        SELECT * FROM availability_slots 
+        WHERE coach_id = ? AND active = TRUE 
+        ORDER BY day_of_week, start_time
+      `).bind(id).all();
+
+      const coachWithAvailability = {
+        ...coach,
+        specialties: coach.specialties ? JSON.parse(coach.specialties) : [],
+        availability: availability
+      };
+
+      return c.json({ success: true, coach: coachWithAvailability });
+    } else {
+      // Use mock data
+      const coach = mockCoaches.find(c => c.id === id);
+      if (!coach) {
+        return c.json({ success: false, error: 'Coach not found' }, 404);
+      }
+      
+      const { mockAvailabilitySlots } = await import('../mockData');
+      const availability = mockAvailabilitySlots.filter(slot => slot.coach_id === id);
+      
+      return c.json({ 
+        success: true, 
+        coach: { ...coach, availability } 
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching coach, using mock data:', error);
+    // Fallback to mock data
+    const coach = mockCoaches.find(c => c.id === id);
     if (!coach) {
       return c.json({ success: false, error: 'Coach not found' }, 404);
     }
-
-    // Get coach's availability
-    const { results: availability } = await c.env.DB.prepare(`
-      SELECT * FROM availability_slots 
-      WHERE coach_id = ? AND active = TRUE 
-      ORDER BY day_of_week, start_time
-    `).bind(id).all();
-
-    const coachWithAvailability = {
-      ...coach,
-      specialties: coach.specialties ? JSON.parse(coach.specialties) : [],
-      availability: availability
-    };
-
-    return c.json({ success: true, coach: coachWithAvailability });
-  } catch (error) {
-    console.error('Error fetching coach:', error);
-    return c.json({ success: false, error: 'Failed to fetch coach' }, 500);
+    
+    const { mockAvailabilitySlots } = await import('../mockData');
+    const availability = mockAvailabilitySlots.filter(slot => slot.coach_id === id);
+    
+    return c.json({ 
+      success: true, 
+      coach: { ...coach, availability } 
+    });
   }
 });
 

@@ -5,5 +5,12 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "martial-arts-studio-production",
+      "database_id": "c08f2cef-7d28-4a8d-a8b0-f1417d6a05be"
+    }
   ]
 }

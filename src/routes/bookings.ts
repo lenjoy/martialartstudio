@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Bindings, CreateBookingRequest, BookingWithDetails } from '../types';
+import { mockCoaches, demoBookings, addDemoBooking, createDemoStudent } from '../mockData';
 
 const bookings = new Hono<{ Bindings: Bindings }>();
 
@@ -109,6 +110,33 @@ bookings.post('/', async (c) => {
     const duration = 60; // minutes
     const startMinutes = parseTime(body.start_time);
     const endTime = formatTime(startMinutes + duration);
+
+    if (!c.env.DB) {
+      // Use mock data system for demo
+      const newBooking = addDemoBooking({
+        student_id: 999, // Demo student ID
+        coach_id: body.coach_id,
+        booking_date: body.booking_date,
+        start_time: body.start_time,
+        end_time: endTime,
+        class_type: body.class_type || 'private',
+        status: 'confirmed',
+        notes: body.notes || null
+      });
+
+      return c.json({ 
+        success: true, 
+        booking_id: newBooking.id,
+        message: 'Demo booking created successfully (using mock data - setup database for persistence)',
+        details: {
+          student_id: 999,
+          coach_id: body.coach_id,
+          booking_date: body.booking_date,
+          start_time: body.start_time,
+          end_time: endTime
+        }
+      });
+    }
 
     // Check if the slot is available
     const existingBooking = await c.env.DB.prepare(`

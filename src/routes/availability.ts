@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Bindings, AvailabilitySlot, AvailableSlot } from '../types';
+import { mockAvailabilitySlots, mockCoaches, demoBookings } from '../mockData';
 
 const availability = new Hono<{ Bindings: Bindings }>();
 
@@ -40,47 +41,78 @@ availability.get('/slots', async (c) => {
     // Get day of week (0=Sunday, 1=Monday, etc.)
     const dayOfWeek = new Date(date).getDay();
     
-    let query = `
-      SELECT 
-        a.coach_id,
-        c.name as coach_name,
-        a.day_of_week,
-        a.start_time,
-        a.end_time,
-        a.slot_duration
-      FROM availability_slots a
-      JOIN coaches c ON a.coach_id = c.id
-      WHERE a.day_of_week = ? 
-        AND a.active = TRUE 
-        AND c.active = TRUE
-    `;
+    let results: any[] = [];
+    let existingBookings: any[] = [];
     
-    const bindings = [dayOfWeek];
-    
-    if (coach_id) {
-      query += ' AND a.coach_id = ?';
-      bindings.push(coach_id);
+    if (c.env.DB) {
+      // Use database
+      let query = `
+        SELECT 
+          a.coach_id,
+          c.name as coach_name,
+          a.day_of_week,
+          a.start_time,
+          a.end_time,
+          a.slot_duration
+        FROM availability_slots a
+        JOIN coaches c ON a.coach_id = c.id
+        WHERE a.day_of_week = ? 
+          AND a.active = TRUE 
+          AND c.active = TRUE
+      `;
+      
+      const bindings = [dayOfWeek];
+      
+      if (coach_id) {
+        query += ' AND a.coach_id = ?';
+        bindings.push(coach_id);
+      }
+      
+      query += ' ORDER BY c.name, a.start_time';
+
+      const dbResults = await c.env.DB.prepare(query).bind(...bindings).all();
+      results = dbResults.results;
+      
+      // Get existing bookings
+      let bookingsQuery = `
+        SELECT coach_id, start_time, end_time 
+        FROM bookings 
+        WHERE booking_date = ? AND status = 'confirmed'
+      `;
+      
+      const bookingBindings = [date];
+      if (coach_id) {
+        bookingsQuery += ' AND coach_id = ?';
+        bookingBindings.push(coach_id);
+      }
+
+      const bookingResults = await c.env.DB.prepare(bookingsQuery)
+        .bind(...bookingBindings).all();
+      existingBookings = bookingResults.results;
+    } else {
+      // Use mock data
+      results = mockAvailabilitySlots
+        .filter(slot => slot.day_of_week === dayOfWeek && slot.active)
+        .filter(slot => !coach_id || slot.coach_id === parseInt(coach_id))
+        .map(slot => {
+          const coach = mockCoaches.find(c => c.id === slot.coach_id);
+          return {
+            coach_id: slot.coach_id,
+            coach_name: coach?.name || 'Unknown Coach',
+            day_of_week: slot.day_of_week,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            slot_duration: slot.slot_duration
+          };
+        });
+      
+      // Filter existing bookings
+      existingBookings = demoBookings.filter(booking => 
+        booking.booking_date === date && 
+        booking.status === 'confirmed' &&
+        (!coach_id || booking.coach_id === parseInt(coach_id))
+      );
     }
-    
-    query += ' ORDER BY c.name, a.start_time';
-
-    const { results } = await c.env.DB.prepare(query).bind(...bindings).all();
-
-    // Get existing bookings for the date to filter out unavailable slots
-    let bookingsQuery = `
-      SELECT coach_id, start_time, end_time 
-      FROM bookings 
-      WHERE booking_date = ? AND status = 'confirmed'
-    `;
-    
-    const bookingBindings = [date];
-    if (coach_id) {
-      bookingsQuery += ' AND coach_id = ?';
-      bookingBindings.push(coach_id);
-    }
-
-    const { results: existingBookings } = await c.env.DB.prepare(bookingsQuery)
-      .bind(...bookingBindings).all();
 
     // Generate available time slots
     const availableSlots: AvailableSlot[] = [];
