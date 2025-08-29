@@ -5,6 +5,7 @@ import { renderer } from './renderer'
 import coaches from './routes/coaches'
 import availability from './routes/availability'
 import bookings from './routes/bookings'
+import calendar from './routes/calendar'
 import type { Bindings } from './types'
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -26,6 +27,7 @@ app.use(renderer)
 app.route('/api/coaches', coaches)
 app.route('/api/availability', availability)
 app.route('/api/bookings', bookings)
+app.route('/api/calendar', calendar)
 
 // Main page
 app.get('/', (c) => {
@@ -46,6 +48,10 @@ app.get('/', (c) => {
               <i className="fas fa-users mr-2"></i>
               Meet Our Coaches
             </a>
+            <a href="#calendar" className="bg-red-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+              <i className="fas fa-calendar-alt mr-2"></i>
+              View Schedule
+            </a>
             <a href="#booking" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-900 transition-colors">
               <i className="fas fa-calendar-plus mr-2"></i>
               Book a Class
@@ -62,6 +68,40 @@ app.get('/', (c) => {
           </h2>
           <div id="coaches-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Coaches will be loaded dynamically */}
+          </div>
+        </section>
+
+        <section id="calendar" className="mb-16">
+          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
+            <i className="fas fa-calendar-alt mr-3"></i>
+            Studio Schedule Calendar
+          </h2>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+              <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+                <label className="text-sm font-medium text-gray-700">Select Date:</label>
+                <input 
+                  type="date" 
+                  id="calendar-date" 
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+                <button 
+                  onclick="loadCalendar()" 
+                  className="bg-red-900 text-white px-4 py-2 rounded-md hover:bg-red-800 transition-colors">
+                  <i className="fas fa-search mr-1"></i>
+                  View Schedule
+                </button>
+              </div>
+              <div id="calendar-summary" className="text-sm text-gray-600">
+                Select a date to view the studio schedule
+              </div>
+            </div>
+            <div id="calendar-content" className="min-h-96">
+              <div className="text-center text-gray-500 py-12">
+                <i className="fas fa-calendar-alt text-4xl mb-4 opacity-50"></i>
+                <p>Choose a date above to see all coaches' availability for that day</p>
+              </div>
+            </div>
           </div>
         </section>
 

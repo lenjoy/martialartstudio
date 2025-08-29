@@ -171,3 +171,63 @@ textarea:focus {
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
+
+/* Calendar specific styles */
+.calendar-grid {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.calendar-slot {
+  transition: all 0.2s ease;
+}
+
+.calendar-slot:hover {
+  transform: translateY(-1px);
+}
+
+.calendar-time-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-left: 4px solid #7f1d1d;
+}
+
+.calendar-slot-available {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.calendar-slot-booked {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+.calendar-slot-unavailable {
+  border-left: 4px solid #9ca3af;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+/* Calendar animations */
+.calendar-slot-enter {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Calendar responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-grid {
+    font-size: 0.875rem;
+  }
+  
+  .calendar-slot {
+    padding: 0.75rem;
+  }
+}
